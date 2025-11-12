@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watch PPS Password Generator</title>
+<style>
+body {
+  font-family: sans-serif;
+  background: #111;
+  color: #fff;
+  padding: 4px;
+  margin: 0;
+  text-align: center;
+}
+input, button {
+  font-size: 14px;
+  width: 100%;
+  margin: 2px 0;
+  padding: 4px;
+  border-radius: 4px;
+  border: none;
+}
+#output {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 12px;
+}
+.symbol {
+  display: inline-block;
+  background: #222;
+  margin: 1px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  text-align: center;
+  min-width: 28px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.symbol:hover {
+  background: #333;
+}
+.symbol span.atomic {
+  font-size: 10px;
+  display: block;
+  color: #aaa;
+}
+#password {
+  margin-top: 6px;
+  font-size: 14px;
+  word-break: break-word;
+}
+#copyBtn {
+  margin-top: 4px;
+  padding: 4px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: none;
+  background:#444;
+  color:#fff;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+<h3>Watch PPS Password</h3>
+<input id="phrase" placeholder="Type a phrase" />
+<button onclick="generatePassword()">Generate</button>
+<div id="output"></div>
+<div id="password"></div>
+<button id="copyBtn" onclick="copyPassword()">Copy</button>
+
+<script>
+// PPS Phonetic Mapping
+const phonemeMapping = {
+  "ph":"F","f":"F","th":"Th","t":"Ti","d":"Dy",
+  "sh":"Si","ch":"C","j":"J","a":"Ac","e":"Er","i":"Ni","o":"Os","u":"U",
+  "oo":"U","ee":"Ne","ai":"Na","ay":"Na","ow":"At","oi":"B",
+  "n":"N","m":"Mn","l":"Li","r":"Rn","s":"S","h":"H","k":"K","g":"Ga","w":"W","y":"Y"
+};
+const atomicNumbers = {
+  "F":9,"Ti":22,"Dy":66,"Si":14,"C":6,"J":48,"Ac":89,"Er":68,"Ni":28,
+  "Os":76,"U":92,"Ne":10,"Na":11,"At":85,"B":5,"N":7,"Mn":25,"Li":3,
+  "Rn":86,"S":16,"H":1,"K":36,"Ga":31,"W":74,"Y":39,"Th":90
+};
+const symbolProperties = {
+  radioactive: ["Rn","U","Th","At","Ac"],
+  noble: ["He","Ne","Ar","Kr","Xe","Rn"],
+  expensive: ["Au","Pt","Pd"],
+  halogen: ["F","Cl","Br","I"]
+};
+const propertyChars = {radioactive:"!", noble:"#", expensive:"$", halogen:"@"};
+const phonemePronunciation = {
+  "F":"f","Ti":"t","Dy":"d","Si":"sh","C":"ch","J":"j",
+  "Ac":"a","Er":"e","Ni":"i","Os":"o","U":"oo","Ne":"ee","Na":"ay",
+  "At":"ow","B":"oy","N":"n","Mn":"m","Li":"l","Rn":"r","S":"s",
+  "H":"h","K":"k","Ga":"g","W":"w","Y":"y","Th":"th"
+};
+
+function generatePassword(){
+  const phrase = document.getElementById("phrase").value.toLowerCase();
+  const words = phrase.split(/\s+/);
+  const output = document.getElementById("output");
+  output.innerHTML = '';
+  let password = "";
+
+  words.forEach(word=>{
+    let i=0;
+    while(i<word.length){
+      let three = word.slice(i,i+3), two = word.slice(i,i+2), char;
+      if(phonemeMapping[three]) char=three,i+=3;
+      else if(phonemeMapping[two]) char=two,i+=2;
+      else char=word[i],i+=1;
+
+      const sym = phonemeMapping[char] || char;
+      const num = atomicNumbers[sym] || '';
+      let tile = sym + (num?num:'');
+
+      // Add special character
+      let special="";
+      if(symbolProperties.radioactive.includes(sym)) special+=propertyChars.radioactive;
+      else if(symbolProperties.noble.includes(sym)) special+=propertyChars.noble;
+      else if(symbolProperties.expensive.includes(sym)) special+=propertyChars.expensive;
+      else if(symbolProperties.halogen.includes(sym)) special+=propertyChars.halogen;
+
+      password += tile + special;
+
+      // Interactive tile
+      let span=document.createElement('div');
+      span.className='symbol';
+      span.innerHTML=tile+(special? `<span class="atomic">${special}</span>`:'');
+      span.onclick=()=>speak(sym);
+      output.appendChild(span);
+    }
+    password+="_"; // word separator
+    let space=document.createElement('div'); space.style.width='100%';
+    output.appendChild(space);
+  });
+
+  document.getElementById("password").innerText = password;
+}
+
+function speak(sym){
+  let utter=new SpeechSynthesisUtterance(phonemePronunciation[sym]||sym);
+  utter.rate=0.9;
+  speechSynthesis.speak(utter);
+}
+
+function copyPassword(){
+  const pwd=document.getElementById("password").innerText;
+  navigator.clipboard.writeText(pwd).then(()=>alert("Password copied!"));
+}
+</script>
+</body>
+</html>
